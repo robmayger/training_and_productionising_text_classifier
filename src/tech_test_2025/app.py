@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from typing import Dict, Any
 import yaml
 import mlflow
 import mlflow.pytorch
@@ -15,7 +16,16 @@ from langdetect import detect, DetectorFactory
 DetectorFactory.seed = 0
 
 
-def detect_language(text):
+def detect_language(text: str) -> str:
+    """
+    Detect the language of the input text.
+
+    Args:
+        text (str): Input text.
+
+    Returns:
+        str: ISO language code (e.g., 'en') or 'unknown' if detection fails.
+    """
     try:
         return detect(text)
     except:
@@ -46,24 +56,38 @@ le = joblib.load(
     )
 )
 
+# ---- Preprocessor ----
 preprocessor = TextPreprocessor(use_spell_correction=False)
 preprocessor.bigrams = bigram_model
 
 # ---- FastAPI App ----
 app = FastAPI()
 
+
 class TextIn(BaseModel):
+    """Input schema for prediction endpoint."""
     text: str
 
 @app.post("/predict")
-def predict(inp: TextIn):
+def predict(inp: TextIn) -> Dict[str, Any]:
+    """
+    Predict the class of a given English text.
+
+    Args:
+        inp (TextIn): Input object containing the text string.
+
+    Raises:
+        HTTPException: If the text is not detected as English.
+
+    Returns:
+        dict: Prediction results including class index, label, and probabilities.
+    """
 
     if detect_language(inp.text) != "en":
         raise HTTPException(
             status_code=400,
             detail="Current model does not support non-English text."
         )
-
 
     clean = preprocessor.preprocess(inp.text)
     encoded = encode(clean, vocab)

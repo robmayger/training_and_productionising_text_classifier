@@ -6,6 +6,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from src.preprocessing import encode, create_vocab
 from torch.utils.data import DataLoader
+from typing import Tuple, Dict, Any
 
 import pandas as pd
 from langdetect import detect, DetectorFactory
@@ -15,7 +16,16 @@ import pandas as pd
 
 DetectorFactory.seed = 0
 
-def detect_language(text):
+def detect_language(text: str) -> str:
+    """
+    Detect the language of a given text.
+
+    Args:
+        text (str): Input text string.
+
+    Returns:
+        str: ISO language code (e.g., 'en') or 'unknown' if detection fails.
+    """
     try:
         return detect(text)
     except:
@@ -25,8 +35,23 @@ def detect_language(text):
 def train_text_classifier(
     df: pd.DataFrame,
     preprocessor: TextPreprocessor,
-    config: dict
-):
+    config: Dict[str, Any]
+) -> Tuple[pl.LightningModule, Dict[str, int], LabelEncoder, Any]:
+    """
+    Train a text classifier using PyTorch Lightning and preprocess the data.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing 'company_description' and 'source' columns.
+        preprocessor (TextPreprocessor): Preprocessor instance for cleaning, tokenizing, and building bigrams.
+        config (Dict[str, Any]): Configuration dictionary with model and training parameters.
+
+    Returns:
+        Tuple containing:
+            - model (pl.LightningModule): Trained PyTorch Lightning model.
+            - vocab (Dict[str, int]): Vocabulary mapping tokens to indices.
+            - le (LabelEncoder): LabelEncoder fitted on the target labels.
+            - bigram_model (Any): Trained bigram model from the preprocessor.
+    """
 
     df['language'] = df['company_description'].apply(detect_language)
     df = df[df.language == config['language']]
@@ -65,7 +90,7 @@ def train_text_classifier(
 
     model = ModelClass(
         vocab_size=vocab_size,
-        n_classes = len(le.classes_),
+        n_classes=len(le.classes_),
         **config["model"]["params"]
     )
 

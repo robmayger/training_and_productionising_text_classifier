@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from typing import Dict, Any
 import pandas as pd
 import yaml
 
@@ -13,7 +14,17 @@ from src.preprocessing import TextPreprocessor
 from src.training.train_text_classifier import train_text_classifier
 
 
-def train_and_log_model(df, config):
+def train_and_log_model(df: pd.DataFrame, config: Dict[str, Any]) -> str:
+    """
+    Train a text classifier and log the model and artifacts to MLflow.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing training data.
+        config (Dict[str, Any]): Configuration dictionary with experiment and model settings.
+
+    Returns:
+        str: MLflow run ID of the logged run.
+    """
 
     preprocessor = TextPreprocessor(use_spell_correction=False)
 
@@ -46,11 +57,17 @@ def train_and_log_model(df, config):
 
         run_id = run.info.run_id
         print("Logged Run ID:", run_id)
-    
+
     return run_id
 
 
-def promote_model(config):
+def promote_model(config: Dict[str, Any]) -> None:
+    """
+    Promote the latest version of a registered MLflow model to Production.
+
+    Args:
+        config (Dict[str, Any]): Configuration dictionary with model settings.
+    """
 
     client = MlflowClient()
 
@@ -90,4 +107,3 @@ if __name__ == "__main__":
     run_id = train_and_log_model(df, config)
 
     promote_model(config)
-

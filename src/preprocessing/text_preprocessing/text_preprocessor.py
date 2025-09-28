@@ -13,11 +13,22 @@ nltk.download('stopwords')
 
 class TextPreprocessor:
     """
-    A class to preprocess company descriptions for NLP tasks.
-    Performs lowercasing, noise removal, tokenization, stopword removal,
-    lemmatization, number normalization, optional spelling correction, and n-grams.
+    Preprocesses text data for NLP tasks.
+
+    Features:
+    - Lowercasing
+    - Noise removal (URLs, emails, phone numbers, punctuation)
+    - Tokenization
+    - Stopword removal
+    - Lemmatization
+    - Number normalization
+    - Optional spelling correction
+    - Optional bigram detection and merging
     """
-    def __init__(self, use_spell_correction: bool = False, min_bigram_count: int = 5, bigram_threshold: int = 10):
+    def __init__(
+        self, use_spell_correction: bool = False, 
+        min_bigram_count: int = 5, bigram_threshold: float = 10.0
+    ) -> None:
         self.use_spell_correction = use_spell_correction
         self.stop_words = set(stopwords.words('english'))
         self.nlp = spacy.load('en_core_web_sm', disable=["parser", "ner"])
@@ -26,7 +37,22 @@ class TextPreprocessor:
         self.bigram_threshold = bigram_threshold
 
     def clean_text(self, text: str) -> str:
-        """Lowercase, remove URLs, emails, phone numbers, punctuation, extra whitespace"""
+        """
+        Clean text by lowercasing and removing noise.
+
+        Removes:
+        - URLs
+        - Emails
+        - Phone numbers
+        - Non-alphanumeric characters
+        - Extra whitespace
+
+        Args:
+            text (str): Input text.
+
+        Returns:
+            str: Cleaned text.
+        """
         text = text.lower()
         text = re.sub(r'http\S+|www\S+', '', text)
         text = re.sub(r'\S+@\S+', '', text)
@@ -57,7 +83,12 @@ class TextPreprocessor:
         return str(TextBlob(text).correct())
 
     def build_bigrams(self, token_lists: List[List[str]]):
-        """Train bigram model using NLTK collocations"""
+        """
+        Train a bigram model on a list of tokenized documents.
+
+        Args:
+            token_lists (List[List[str]]): List of tokenized documents.
+        """
         all_tokens = [token for tokens in token_lists for token in tokens]
         finder = BigramCollocationFinder.from_words(all_tokens)
         finder.apply_freq_filter(self.min_bigram_count)
@@ -69,7 +100,15 @@ class TextPreprocessor:
         }
 
     def apply_bigrams(self, tokens: List[str]) -> List[str]:
-        """Transform tokens by merging known bigrams"""
+        """
+        Merge known bigrams in a list of tokens.
+
+        Args:
+            tokens (List[str]): Tokenized text.
+
+        Returns:
+            List[str]: Tokens with bigrams merged.
+        """
         if not self.bigrams:
             return tokens
 
@@ -90,7 +129,24 @@ class TextPreprocessor:
         return merged_tokens
 
     def preprocess(self, text: str) -> str:
-        """Full preprocessing pipeline"""
+        """
+        Apply full preprocessing pipeline to a text string.
+
+        Steps:
+        1. Optional spelling correction
+        2. Cleaning (lowercase, remove noise)
+        3. Tokenization
+        4. Stopword removal
+        5. Lemmatization
+        6. Number normalization
+        7. Bigram merging
+
+        Args:
+            text (str): Input text.
+
+        Returns:
+            str: Preprocessed text as a single string.
+        """
         if self.use_spell_correction:
             text = self.correct_spelling(text)
         text = self.clean_text(text)
