@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  dev:
+    build: .
+    container_name: tech-test-2025
+    volumes:
+      - .:/workspace
+      - /tmp/.X11-unix:/tmp/.X11-unix # For GUI support (if needed)
+    environment:
+      - DISPLAY=${DISPLAY}
+    tty: true
