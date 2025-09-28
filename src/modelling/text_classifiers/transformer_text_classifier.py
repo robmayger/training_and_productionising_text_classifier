@@ -2,15 +2,37 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
+from torch import Tensor
+from typing import Dict
 
 
 class TransformerTextClassifier(pl.LightningModule):
-    def __init__(self, vocab_size, n_classes, embed_dim=100, n_heads=4, hidden_dim=128, n_layers=2, max_len=50, lr=1e-3):
+    """
+    A text classifier using a Transformer encoder.
+
+    This model embeds input token IDs, adds positional embeddings, passes
+    the sequence through a Transformer encoder, and outputs class logits.
+
+    Args:
+        vocab_size (int): Size of the vocabulary.
+        n_classes (int): Number of target classes.
+        embed_dim (int, optional): Dimensionality of token embeddings. Default is 100.
+        n_heads (int, optional): Number of attention heads in the Transformer. Default is 4.
+        hidden_dim (int, optional): Dimensionality of the feedforward layer in the Transformer. Default is 128.
+        n_layers (int, optional): Number of Transformer encoder layers. Default is 2.
+        max_len (int, optional): Maximum sequence length. Default is 50.
+        lr (float, optional): Learning rate for the optimizer. Default is 1e-3.
+    """
+    def __init__(
+        self, vocab_size: int, n_classes: int, embed_dim: int = 100,
+        n_heads: int = 4, hidden_dim: int = 128, n_layers: int = 2,
+        max_len: int = 50, lr: float = 1e-3
+    ) -> None:
         super().__init__()
         self.save_hyperparameters()
         
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
-        self.pos_embedding = nn.Embedding(max_len, embed_dim)  # positional embeddings
+        self.pos_embedding = nn.Embedding(max_len, embed_dim)
 
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=embed_dim,
@@ -20,28 +42,58 @@ class TransformerTextClassifier(pl.LightningModule):
             activation='relu'
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
-        
+
         self.fc = nn.Linear(embed_dim, n_classes)
         self.lr = lr
         self.max_len = max_len
 
-    def forward(self, input_ids):
+    def forward(self, input_ids: Tensor) -> Tensor:
+        """
+        Forward pass of the model.
+
+        Args:
+            input_ids (Tensor): Tensor of shape (batch_size, seq_len) containing token IDs.
+
+        Returns:
+            Tensor: Logits of shape (batch_size, n_classes).
+        """
         batch_size, seq_len = input_ids.size()
-        positions = torch.arange(0, seq_len, device=input_ids.device).unsqueeze(0).expand(batch_size, seq_len)
-        
+        positions = (
+            torch.arange(0, seq_len, device=input_ids.device)
+            .unsqueeze(0)
+            .expand(batch_size, seq_len)
+        )
+
         x = self.embedding(input_ids) + self.pos_embedding(positions)
         x = x.permute(1, 0, 2)
         x = self.transformer(x)
         x = x.mean(dim=0)
         return self.fc(x)
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Tensor:
+        """
+        Training step for PyTorch Lightning.
+
+        Args:
+            batch (Dict[str, Tensor]): Batch dictionary with keys 'input_ids' and 'labels'.
+            batch_idx (int): Index of the batch.
+
+        Returns:
+            Tensor: Training loss.
+        """
         logits = self(batch['input_ids'])
         loss = F.cross_entropy(logits, batch['labels'])
         self.log('train_loss', loss)
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: Dict[str, Tensor], batch_idx: int) -> None:
+        """
+        Validation step for PyTorch Lightning.
+
+        Args:
+            batch (Dict[str, Tensor]): Batch dictionary with keys 'input_ids' and 'labels'.
+            batch_idx (int): Index of the batch.
+        """
         logits = self(batch['input_ids'])
         loss = F.cross_entropy(logits, batch['labels'])
         preds = torch.argmax(logits, dim=1)
@@ -49,5 +101,11 @@ class TransformerTextClassifier(pl.LightningModule):
         self.log('val_loss', loss, prog_bar=True)
         self.log('val_acc', acc, prog_bar=True)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """
+        Configure the optimizer for training.
+
+        Returns:
+            torch.optim.Optimizer: Adam optimizer.
+        """
         return torch.optim.Adam(self.parameters(), lr=self.lr)
