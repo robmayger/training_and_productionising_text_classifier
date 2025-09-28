@@ -1,0 +1,15 @@
+
+experiment_name: company_description_classification
+
+data_file_path: data/2025_data_to_explore.csv
+language: en
+
+model:
+  name: TransformerTextClassifier # [MeanPoolingTextClassifier, TransformerTextClassifier]
+  params:
+    embed_dim: 100
+    n_heads: 4
+    hidden_dim: 128
+    n_layers: 2
+    max_len: 50
+    lr: 0.001
