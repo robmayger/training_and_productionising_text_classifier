@@ -6,6 +6,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from src.preprocessing import encode, create_vocab
 from torch.utils.data import DataLoader
+from pytorch_lightning.callbacks import ModelCheckpoint
 from typing import Tuple, Dict, Any
 
 import pandas as pd
@@ -80,10 +81,18 @@ def train_text_classifier(
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=32)
 
+    checkpoint_callback = ModelCheckpoint(
+        monitor="val_f1",
+        mode="max",
+        save_top_k=1,
+        filename="best-model",
+    )
+
     trainer = pl.Trainer(
         max_epochs=10,
         accelerator='cpu',
-        devices=1
+        devices=1,
+        callbacks=[checkpoint_callback]
     )
 
     ModelClass = MODEL_REGISTRY[config["model"]["name"]]
@@ -96,4 +105,14 @@ def train_text_classifier(
 
     trainer.fit(model, train_loader, val_loader)
 
-    return model, vocab, le, preprocessor.bigrams
+    best_model_path = checkpoint_callback.best_model_path
+    best_f1 = checkpoint_callback.best_model_score
+
+    print()
+    print(f"Best model saved at: {best_model_path}")
+    print(f"Best validation F1: {best_f1.item():.4f}")
+    print()
+
+    best_model = ModelClass.load_from_checkpoint(best_model_path)
+
+    return best_model, vocab, le, preprocessor.bigrams

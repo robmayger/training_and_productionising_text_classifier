@@ -1,12 +1,11 @@
-import torch
-import pytorch_lightning as pl
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from typing import Any, Dict
+
+from .base_text_classifier import BaseTextClassifier
 
 
-class MeanPoolingTextClassifier(pl.LightningModule):
+class MeanPoolingTextClassifier(BaseTextClassifier):
     """
     A simple text classifier using mean pooling over token embeddings.
 
@@ -29,7 +28,7 @@ class MeanPoolingTextClassifier(pl.LightningModule):
         hidden_dim: int = 128,
         lr: float = 1e-3
     ) -> None:
-        super().__init__()
+        super().__init__(n_classes, lr)
         self.save_hyperparameters()
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
         self.fc1 = nn.Linear(embed_dim, hidden_dim)
@@ -51,43 +50,3 @@ class MeanPoolingTextClassifier(pl.LightningModule):
         pooled = embedded.mean(dim=1)
         x = F.relu(self.fc1(pooled))
         return self.fc2(x)
-
-    def training_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Tensor:
-        """
-        Training step for PyTorch Lightning.
-
-        Args:
-            batch (Dict[str, Tensor]): Batch dictionary with keys 'input_ids' and 'labels'.
-            batch_idx (int): Index of the batch.
-
-        Returns:
-            Tensor: Training loss.
-        """
-        logits = self(batch['input_ids'])
-        loss = F.cross_entropy(logits, batch['labels'])
-        self.log('train_loss', loss)
-        return loss
-
-    def validation_step(self, batch: Dict[str, Tensor], batch_idx: int) -> None:
-        """
-        Validation step for PyTorch Lightning.
-
-        Args:
-            batch (Dict[str, Tensor]): Batch dictionary with keys 'input_ids' and 'labels'.
-            batch_idx (int): Index of the batch.
-        """
-        logits = self(batch['input_ids'])
-        loss = F.cross_entropy(logits, batch['labels'])
-        preds = torch.argmax(logits, dim=1)
-        acc = (preds == batch['labels']).float().mean()
-        self.log('val_loss', loss, prog_bar=True)
-        self.log('val_acc', acc, prog_bar=True)
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """
-        Configure the optimizer for training.
-
-        Returns:
-            torch.optim.Optimizer: The Adam optimizer.
-        """
-        return torch.optim.Adam(self.parameters(), lr=self.lr)
