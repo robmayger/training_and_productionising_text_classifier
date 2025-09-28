@@ -11,4 +11,5 @@ langdetect
 spacy==3.8.7
 textblob==0.19.0
 pyyaml
+mlflow
 fastapi

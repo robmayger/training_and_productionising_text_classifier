@@ -96,4 +96,4 @@ def train_text_classifier(
 
     trainer.fit(model, train_loader, val_loader)
 
-    return model, vocab, le, preprocessor.bigram_model
+    return model, vocab, le, preprocessor.bigrams
