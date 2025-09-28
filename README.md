@@ -13,7 +13,6 @@ This project demonstrates how to train and deploy a text classification model us
 ## Project Structure
 
 ```
-
 .
 ├── .devcontainer/           # Development container configuration
 ├── src/                     # Source code for data processing and modeling
