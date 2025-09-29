@@ -63,7 +63,7 @@ This project demonstrates how to train and deploy a text classification model us
 5. **Query the model:**
 
    ```bash
-   curl -X POST "http://127.0.0.1:1111/predict" \
+   curl -X POST "http://127.0.0.1:8000/predict" \
    -H "Content-Type: application/json" \
    -d '{"text": "Example text to classify"}'
    ```
