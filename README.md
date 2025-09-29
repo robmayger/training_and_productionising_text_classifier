@@ -70,6 +70,16 @@ This project demonstrates how to train and deploy a text classification model us
 
 ## Approach
 
+### Configuration and Reproducibility
+
+The entire modeling and deployment pipeline is **governed by a configuration file** (`config.yml`). This ensures that:
+
+- **Reproducibility**: Experiments can be rerun with the same settings, producing consistent results.  
+- **Hyperparameter tuning**: Model hyperparameters (e.g., embedding size, hidden dimensions, number of layers, learning rate) can be easily modified through the config file to improve prediction accuracy without changing the code.  
+- **Deployment control**: MLflow experiment names, model registry settings, and artifact paths are all configured centrally, ensuring smooth promotion from training to Production.
+
+With the current setup, the pipeline achieves a **mean F1 score of 0.9** on the validation dataset, providing a strong baseline for text classification tasks.
+
 ### Preprocessing
 
 1. **Language detection**
