@@ -73,8 +73,10 @@ def train_text_classifier(
     vocab = create_vocab(X_train)
     vocab_size = len(vocab) + 1
 
-    train_encodings = list(map(lambda x: encode(x, vocab), X_train))
-    test_encodings = list(map(lambda x: encode(x, vocab), X_test))
+    max_len = config['preprocessing']['max_document_len']
+
+    train_encodings = list(map(lambda x: encode(x, vocab, max_len=max_len), X_train))
+    test_encodings = list(map(lambda x: encode(x, vocab, max_len=max_len), X_test))
 
     train_dataset = TextDocumentDataset(train_encodings, y_train.tolist())
     val_dataset = TextDocumentDataset(test_encodings, y_test.tolist())
@@ -89,7 +91,7 @@ def train_text_classifier(
     )
 
     trainer = pl.Trainer(
-        max_epochs=10,
+        max_epochs=config['training']['n_epochs'],
         accelerator='cpu',
         devices=1,
         callbacks=[checkpoint_callback]
